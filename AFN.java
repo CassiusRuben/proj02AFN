@@ -96,7 +96,34 @@ public class AFN{
 		por el AFN. Recuerde lo aprendido en el proyecto 1.
 	*/
 	public boolean accept(String string){
-		return false;
+		Set<Integer> actuales = new HashSet<>();
+    	actuales.add(0); // empezamos desde el estado 0
+    	actuales = cerrarLambda(actuales); // expandimos con lambda
+
+    	for (int i = 0; i < string.length(); i++) {
+        	String simbolo = String.valueOf(string.charAt(i));
+        	Set<Integer> siguientes = new HashSet<>();
+
+        	for (int estado : actuales) {
+            	Set<Integer> destinos = transiciones.get(estado).get(simbolo);
+            	siguientes.addAll(destinos); // agregamos todos los destinos por ese símbolo
+        	}
+
+        	// Expandimos con lambda desde los nuevos estados
+        	actuales = cerrarLambda(siguientes);
+
+        	// Si no hay estados vivos, ya no hay camino posible → cadena rechazada
+        	if (actuales.isEmpty()) return false;
+    	
+		}
+
+    	// Al final, si algún estado es final, aceptamos
+    	for (int estado : actuales) {
+        	if (estadosFinales[estado]) return true;
+    	}
+
+    	return false;
+		
 	}
 
 	/*
