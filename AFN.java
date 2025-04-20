@@ -6,6 +6,7 @@
 */
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.PrintWriter;
 import java.util.*;
 
 public class AFN{
@@ -162,6 +163,105 @@ public class AFN{
 		del proyecto.
 	*/
 	public void toAFD(String afdPath){
+    try {
+        // Estructuras para construir el AFD
+        List<Set<Integer>> afdEstados = new ArrayList<>();
+        Map<Set<Integer>, Integer> estadoID = new HashMap<>();
+        Map<Integer, Map<String, Integer>> afdTransiciones = new HashMap<>();
+        Set<Integer> afdFinales = new HashSet<>();
+
+        // Paso 1: estado inicial del AFD
+        Set<Integer> inicial = new HashSet<>();
+        inicial.add(0);
+        inicial = cerrarLambda(inicial);
+
+        afdEstados.add(inicial);
+        estadoID.put(inicial, 0);
+
+        Queue<Set<Integer>> cola = new LinkedList<>();
+        cola.add(inicial);
+
+        int contadorEstados = 1;
+
+        // Paso 2: construcción de todos los estados y transiciones
+        while (!cola.isEmpty()) {
+            Set<Integer> actual = cola.poll();
+            int idActual = estadoID.get(actual);
+            afdTransiciones.put(idActual, new HashMap<>());
+
+            for (String simbolo : alfabeto) {
+                Set<Integer> destinos = new HashSet<>();
+                for (int estado : actual) {
+                    destinos.addAll(transiciones.get(estado).get(simbolo));
+                }
+
+                // Cerradura lambda después de consumir el símbolo
+                destinos = cerrarLambda(destinos);
+
+                if (destinos.isEmpty()) {
+                    afdTransiciones.get(idActual).put(simbolo, -1); // estado inválido
+                } else {
+                    if (!estadoID.containsKey(destinos)) {
+                        estadoID.put(destinos, contadorEstados++);
+                        afdEstados.add(destinos);
+                        cola.add(destinos);
+                    }
+                    int idDestino = estadoID.get(destinos);
+                    afdTransiciones.get(idActual).put(simbolo, idDestino);
+                }
+            }
+        }
+
+        // Paso 3: marcar estados finales del AFD
+        for (int i = 0; i < afdEstados.size(); i++) {
+            Set<Integer> conjunto = afdEstados.get(i);
+            for (int estado : conjunto) {
+                if (estadosFinales[estado]) {
+                    afdFinales.add(i);
+                    break;
+                }
+            }
+        }
+
+        // Paso 4: escribir el archivo
+        PrintWriter writer = new PrintWriter(afdPath);
+
+        // Línea 1: alfabeto
+        writer.println(String.join(",", alfabeto));
+
+        // Línea 2: cantidad de estados
+        writer.println(afdEstados.size());
+
+        // Línea 3: estados finales
+        if (!afdFinales.isEmpty()) {
+            List<String> finales = new ArrayList<>();
+            for (int f : afdFinales) {
+                finales.add(String.valueOf(f));
+            }
+            writer.println(String.join(",", finales));
+        } else {
+            writer.println(); // línea vacía si no hay finales
+        }
+
+        // Siguientes líneas: matriz de transición (una por símbolo)
+        for (String simbolo : alfabeto) {
+            List<String> fila = new ArrayList<>();
+            for (int i = 0; i < afdEstados.size(); i++) {
+                int destino = afdTransiciones.get(i).get(simbolo);
+                if (destino == -1) {
+                    fila.add("{}");
+                } else {
+                    fila.add("{" + destino + "}");
+                }
+            }
+            writer.println(String.join(",", fila));
+        }
+
+        writer.close();
+
+    } catch (Exception e) {
+        System.err.println("Error al generar el AFD: " + e.getMessage());
+    }
 	}
 
 	/*
@@ -173,6 +273,42 @@ public class AFN{
 		evaluar, debe generar un archivo .afd
 	*/
 	public static void main(String[] args) throws Exception{
+			if (args.length == 0) {
+				System.out.println("Uso:");
+				System.out.println("  java AFN archivo.afn                        → evaluar cadenas");
+				System.out.println("  java AFN archivo.afn -to-afd salida.afd     → convertir a AFD");
+				return;
+			}
+		
+			String afnPath = args[0];
+			AFN afn = new AFN(afnPath);
+		
+			// Modo: convertir a AFD
+			if (args.length >= 2 && args[1].equals("-to-afd")) {
+				if (args.length < 3) {
+					System.out.println("Debe proporcionar el path del archivo de salida (.afd)");
+					return;
+				}
+		
+				String afdPath = args[2];
+				afn.toAFD(afdPath);
+				System.out.println("Archivo AFD generado exitosamente: " + afdPath);
+			} else {
+				// Modo: evaluación interactiva de cuerdas
+				Scanner sc = new Scanner(System.in);
+				while (true) {
+					System.out.print("Ingrese cuerda (vacía para salir): ");
+					String input = sc.nextLine();
+		
+					if (input.isEmpty()) break;
+		
+					boolean aceptada = afn.accept(input);
+					System.out.println(aceptada ? "ACEPTADA" : "RECHAZADA");
+				}
+				sc.close();
+			}
+		
+		
 		
 	}
 }
