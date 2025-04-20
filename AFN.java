@@ -4,7 +4,16 @@
 	METODOS que ya existen, sin embargo, usted es libre de 
 	agregar los campos y metodos que desee.
 */
+import java.util.*;
+import java.util.Map;
+import java.util.Set;
+
 public class AFN{
+	private String[] alfabeto;
+	private int cantidadEstados;
+	private boolean[] estadosFinales;
+	private Map<Integer, Map<String, Set<Integer>>> transiciones;
+
 
 	/*
 		Implemente el constructor de la clase AFN
