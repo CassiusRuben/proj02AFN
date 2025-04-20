@@ -100,6 +100,36 @@ public class AFN{
 	}
 
 	/*
+	Implementación personal, cerrarLambda para calcular el alcance de lambda
+	sobre los estados sin usar los símbolos de la cadena originalmente
+	 */
+	private Set<Integer> cerrarLambda(Set<Integer> estados) {
+		Set<Integer> resultado = new HashSet<>(estados);
+		Stack<Integer> pila = new Stack<>();
+	
+		// Inicializamos la pila con los estados recibidos
+		for (int estado : estados) {
+			pila.push(estado);
+		}
+	
+		while (!pila.isEmpty()) {
+			int actual = pila.pop();
+	
+			// Revisamos los estados a los que podemos ir por transiciones lambda
+			for (int destino : transiciones.get(actual).get("lambda")) {
+				if (!resultado.contains(destino)) {
+					resultado.add(destino);
+					pila.push(destino); // seguimos explorando desde este nuevo destino
+				}
+			}
+		}
+	
+		return resultado;
+	}
+	
+
+
+	/*
 		Implemente el metodo toAFD. Este metodo debe generar un archivo
 		de texto que contenga los datos de un AFD segun las especificaciones
 		del proyecto.
